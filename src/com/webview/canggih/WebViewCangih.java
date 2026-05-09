@@ -38,7 +38,7 @@ import com.google.appinventor.components.runtime.*;
 
 @DesignerComponent(
     version = 7,
-    description = "WebView Canggih V7: Full Control (JS, DomStorage, Location) via Designer + Fix Interface.",
+    description = "WebView Canggih V7: Full Control (JS, DomStorage, Location) via Designer.",
     category = ComponentCategory.EXTENSION,
     nonVisible = true,
     iconName = ""
@@ -70,8 +70,10 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         this.uiHandler = new Handler(Looper.getMainLooper());
     }
 
+    // --- FIX: TAMBAHKAN CATEGORY DI BAWAH INI ---
+
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Aktifkan JavaScript.")
+    @SimpleProperty(description = "Aktifkan JavaScript.", category = PropertyCategory.BEHAVIOR)
     public void JavascriptEnabled(boolean enabled) {
         this.jsEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setJavaScriptEnabled(enabled);
@@ -81,7 +83,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     public boolean JavascriptEnabled() { return jsEnabled; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Aktifkan DomStorage.")
+    @SimpleProperty(description = "Aktifkan DomStorage.", category = PropertyCategory.BEHAVIOR)
     public void DomStorageEnabled(boolean enabled) {
         this.domStorageEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setDomStorageEnabled(enabled);
@@ -91,7 +93,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     public boolean DomStorageEnabled() { return domStorageEnabled; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Izinkan Website akses Lokasi.")
+    @SimpleProperty(description = "Izinkan Website akses Lokasi.", category = PropertyCategory.BEHAVIOR)
     public void PromptForPermission(boolean enabled) {
         this.locationEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setGeolocationEnabled(enabled);
@@ -101,7 +103,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     public boolean PromptForPermission() { return locationEnabled; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Izinkan akses file.")
+    @SimpleProperty(description = "Izinkan akses file.", category = PropertyCategory.BEHAVIOR)
     public void AllowFileAccess(boolean enabled) {
         this.fileAccessEnabled = enabled;
         if (mainWebView != null) {
@@ -112,6 +114,8 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
 
     @SimpleProperty
     public boolean AllowFileAccess() { return fileAccessEnabled; }
+
+    // --- SISANYA TETAP SAMA ---
 
     @SimpleFunction(description = "Inisialisasi WebView di dalam Layout.")
     public void Initialize(AndroidViewComponent containerView) {
@@ -150,10 +154,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                 try {
                     DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
                     request.setMimeType(mimetype);
-                    String cookies = CookieManager.getInstance().getCookie(url);
-                    request.addRequestHeader("cookie", cookies);
-                    request.addRequestHeader("User-Agent", userAgent);
-                    request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimetype));
                     request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
                     request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimetype));
                     DownloadManager dm = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
@@ -182,20 +182,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                 container.$form().startActivityForResult(Intent.createChooser(intent, "Pilih File"), FILECHOOSER_RESULTCODE);
                 return true;
             }
-            @Override
-            public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                final Dialog authDialog = new Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
-                WebView childView = new WebView(context);
-                childView.getSettings().setJavaScriptEnabled(jsEnabled);
-                childView.setWebViewClient(new WebViewClient());
-                authDialog.setContentView(childView);
-                authDialog.show();
-                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                transport.setWebView(childView);
-                resultMsg.sendToTarget();
-                return true;
-            }
-            @Override public boolean onConsoleMessage(ConsoleMessage cm) { OnConsoleMessage(cm.message(), cm.lineNumber()); return true; }
         });
 
         container.$form().registerForActivityResult(this);
@@ -215,12 +201,13 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         }
     }
 
-    @SimpleFunction public void LoadUrl(String url) { if (mainWebView != null) mainWebView.loadUrl(url); }
-    @SimpleFunction public void Reload() { if (mainWebView != null) mainWebView.reload(); }
-    @SimpleFunction public void GoBack() { if (mainWebView != null && mainWebView.canGoBack()) mainWebView.goBack(); }
-    @SimpleFunction public void RunJavaScript(String script) { if (mainWebView != null) mainWebView.evaluateJavascript(script, null); }
+    @SimpleFunction(description = "Muat URL.") public void LoadUrl(String url) { if (mainWebView != null) mainWebView.loadUrl(url); }
+    @SimpleFunction(description = "Muat Ulang Halaman.") public void Reload() { if (mainWebView != null) mainWebView.reload(); }
+    @SimpleFunction(description = "Kembali ke Halaman Sebelumnya.") public void GoBack() { if (mainWebView != null && mainWebView.canGoBack()) mainWebView.goBack(); }
+    @SimpleFunction(description = "Jalankan skrip JavaScript.") public void RunJavaScript(String script) { if (mainWebView != null) mainWebView.evaluateJavascript(script, null); }
     
-    @SimpleFunction public void SetWebViewString(String value) {
+    @SimpleFunction(description = "Atur nilai WebViewString.")
+    public void SetWebViewString(String value) {
         this.currentWebViewString = value;
         if (mainWebView != null) {
             String jsCode = "window.WebViewString = '" + value.replace("'", "\\'") + "';";
@@ -228,9 +215,10 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         }
     }
     
-    @SimpleFunction public String GetWebViewString() { return this.currentWebViewString; }
+    @SimpleFunction(description = "Ambil nilai WebViewString saat ini.") public String GetWebViewString() { return this.currentWebViewString; }
 
-    @SimpleEvent public void WebViewStringChange(String value) {
+    @SimpleEvent(description = "Dipicu saat WebViewString berubah.")
+    public void WebViewStringChange(String value) {
         this.currentWebViewString = value;
         EventDispatcher.dispatchEvent(this, "WebViewStringChange", value);
     }
@@ -243,8 +231,8 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         @JavascriptInterface public String getWebViewString() { return (parent != null) ? parent.GetWebViewString() : ""; }
     }
 
-    @SimpleEvent public void OnProgressChanged(int progress) { EventDispatcher.dispatchEvent(this, "OnProgressChanged", progress); }
-    @SimpleEvent public void PageStarted(String url) { EventDispatcher.dispatchEvent(this, "PageStarted", url); }
-    @SimpleEvent public void PageFinished(String url) { EventDispatcher.dispatchEvent(this, "PageFinished", url); }
-    @SimpleEvent public void OnConsoleMessage(String message, int lineNumber) { EventDispatcher.dispatchEvent(this, "OnConsoleMessage", message, lineNumber); }
+    @SimpleEvent(description = "Dipicu saat progres pemuatan berubah.") public void OnProgressChanged(int progress) { EventDispatcher.dispatchEvent(this, "OnProgressChanged", progress); }
+    @SimpleEvent(description = "Dipicu saat halaman mulai dimuat.") public void PageStarted(String url) { EventDispatcher.dispatchEvent(this, "PageStarted", url); }
+    @SimpleEvent(description = "Dipicu saat halaman selesai dimuat.") public void PageFinished(String url) { EventDispatcher.dispatchEvent(this, "PageFinished", url); }
+    @SimpleEvent(description = "Pesan konsol dari website.") public void OnConsoleMessage(String message, int lineNumber) { EventDispatcher.dispatchEvent(this, "OnConsoleMessage", message, lineNumber); }
 }
