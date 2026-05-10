@@ -31,8 +31,8 @@ import com.google.appinventor.components.common.PropertyTypeConstants;
 import com.google.appinventor.components.runtime.*;
 
 @DesignerComponent(
-    version = 9,
-    description = "WebView Canggih V9 Final: Custom Tab Tamoda Full Dinamis (Fixed 60dp).",
+    version = 10,
+    description = "WebView Canggih V10 Final: Custom Tab Dinamis (Fixed 60dp, Java 7 Aman).",
     category = ComponentCategory.EXTENSION,
     nonVisible = true,
     iconName = ""
@@ -202,7 +202,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         });
 
         mainWebView.setWebChromeClient(new WebChromeClient() {
-            @Override public void OnProgressChanged(WebView view, int newProgress) { OnProgressChanged(newProgress); }
+            @Override public void onProgressChanged(WebView view, int newProgress) { OnProgressChanged(newProgress); }
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
                 if (mFilePathCallback != null) mFilePathCallback.onReceiveValue(null);
@@ -306,7 +306,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     // =================================================================
-    // BLOK KODULAR & JEMBATAN JS (ANTI-BENTROK)
+    // BLOK KODULAR & JEMBATAN JS (PERBAIKAN JAVA 7)
     // =================================================================
 
     @SimpleFunction(description = "Muat URL.") public void LoadUrl(String url) { if (mainWebView != null) mainWebView.loadUrl(url); }
@@ -331,12 +331,27 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         EventDispatcher.dispatchEvent(this, "WebViewStringChange", value);
     }
 
+    public void TriggerWebViewStringChange(final String value) {
+        uiHandler.post(new Runnable() {
+            @Override
+            public void run() { WebViewStringChange(value); }
+        });
+    }
+
+    public void TriggerSinyalDiterima(final String data) {
+        uiHandler.post(new Runnable() {
+            @Override
+            public void run() { SinyalDiterima(data); }
+        });
+    }
+
     public static class WebAppInterface {
         WebViewCangih parent;
         WebAppInterface(WebViewCangih parent) { this.parent = parent; }
-        @JavascriptInterface public void KirimSinyal(String data) { if (parent != null) parent.uiHandler.post(() -> parent.SinyalDiterima(data)); }
-        @JavascriptInterface public void WebViewString(String value) { if (parent != null) parent.uiHandler.post(() -> parent.WebViewStringChange(value)); }
-        @JavascriptInterface public void setWebViewString(String value) { if (parent != null) parent.uiHandler.post(() -> parent.WebViewStringChange(value)); }
+        
+        @JavascriptInterface public void KirimSinyal(String data) { if (parent != null) parent.TriggerSinyalDiterima(data); }
+        @JavascriptInterface public void WebViewString(String value) { if (parent != null) parent.TriggerWebViewStringChange(value); }
+        @JavascriptInterface public void setWebViewString(String value) { if (parent != null) parent.TriggerWebViewStringChange(value); }
         @JavascriptInterface public String getWebViewString() { return (parent != null) ? parent.GetWebViewString() : ""; }
     }
 
