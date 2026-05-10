@@ -11,15 +11,9 @@ import android.os.Environment;
 import android.os.Message;
 import android.os.Handler;
 import android.os.Looper;
-import android.print.PrintAttributes;
-import android.print.PrintDocumentAdapter;
-import android.print.PrintManager;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
-import android.view.WindowManager;
 import android.webkit.CookieManager;
-import android.webkit.ConsoleMessage;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
 import android.webkit.URLUtil;
@@ -31,17 +25,14 @@ import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-// SEMUA ANOTASI DAN KATEGORI DIAMBIL DARI SINI
 import com.google.appinventor.components.annotations.*;
 import com.google.appinventor.components.common.ComponentCategory;
 import com.google.appinventor.components.common.PropertyTypeConstants;
 import com.google.appinventor.components.runtime.*;
 
-import java.io.File;
-
 @DesignerComponent(
-    version = 8,
-    description = "WebView Canggih V8: Full Control, Anti-Bentrok Sinyal, dan Custom Tab Dinamis.",
+    version = 9,
+    description = "WebView Canggih V9 Final: Custom Tab Tamoda Full Dinamis (Fixed 60dp).",
     category = ComponentCategory.EXTENSION,
     nonVisible = true,
     iconName = ""
@@ -66,10 +57,11 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     private boolean locationEnabled = true;
     private boolean fileAccessEnabled = true;
 
-    // Setelan dinamis Custom Tab
+    // Setelan dinamis Custom Tab (FINAL)
     private String tabTitle = "( Tamoda web )";
-    private int tabBackgroundColor = 0xFF1B2430; // Default: Biru Dongker Gelap
-    private int tabTextColor = 0xFFFFFFFF;       // Default: Putih
+    private String tabIconText = "←"; 
+    private int tabBackgroundColor = 0xFF1B2430; 
+    private int tabTextColor = 0xFFFFFFFF;       
     private float tabTitleFontSize = 20f;
     private float tabIconFontSize = 32f;
 
@@ -82,47 +74,31 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     // =================================================================
-    // PROPERTI DESIGNER: WEBVIEW
+    // PROPERTI DESIGNER: WEBVIEW SETTINGS
     // =================================================================
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty
-    public void JavascriptEnabled(boolean enabled) {
+    @SimpleProperty public void JavascriptEnabled(boolean enabled) {
         this.jsEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setJavaScriptEnabled(enabled);
     }
     @SimpleProperty(category = PropertyCategory.BEHAVIOR) public boolean JavascriptEnabled() { return jsEnabled; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty
-    public void DomStorageEnabled(boolean enabled) {
+    @SimpleProperty public void DomStorageEnabled(boolean enabled) {
         this.domStorageEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setDomStorageEnabled(enabled);
     }
     @SimpleProperty(category = PropertyCategory.BEHAVIOR) public boolean DomStorageEnabled() { return domStorageEnabled; }
 
-    @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty
-    public void PromptForPermission(boolean enabled) {
-        this.locationEnabled = enabled;
-        if (mainWebView != null) mainWebView.getSettings().setGeolocationEnabled(enabled);
-    }
-    @SimpleProperty(category = PropertyCategory.BEHAVIOR) public boolean PromptForPermission() { return locationEnabled; }
-
-    @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty
-    public void AllowFileAccess(boolean enabled) {
-        this.fileAccessEnabled = enabled;
-        if (mainWebView != null) {
-            mainWebView.getSettings().setAllowFileAccess(enabled);
-            mainWebView.getSettings().setAllowContentAccess(enabled);
-        }
-    }
-    @SimpleProperty(category = PropertyCategory.BEHAVIOR) public boolean AllowFileAccess() { return fileAccessEnabled; }
-
     // =================================================================
-    // PROPERTI DESIGNER: CUSTOM TAB (BARU!)
+    // PROPERTI DESIGNER: CUSTOM TAB DYNAMIC UI
     // =================================================================
+
+    @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_STRING, defaultValue = "←")
+    @SimpleProperty(description = "Ikon tombol kembali (Gunakan simbol/teks seperti ← atau ❮)")
+    public void TabIconText(String icon) { this.tabIconText = icon; }
+    @SimpleProperty(category = PropertyCategory.APPEARANCE) public String TabIconText() { return tabIconText; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_STRING, defaultValue = "( Tamoda web )")
     @SimpleProperty(description = "Judul yang ditampilkan di Custom Tab")
@@ -135,22 +111,22 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     @SimpleProperty(category = PropertyCategory.APPEARANCE) public int TabBackgroundColor() { return tabBackgroundColor; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_COLOR, defaultValue = "&HFFFFFFFF")
-    @SimpleProperty(description = "Warna teks judul dan ikon back di Custom Tab")
+    @SimpleProperty(description = "Warna teks judul dan ikon back")
     public void TabTextColor(int argb) { this.tabTextColor = argb; }
     @SimpleProperty(category = PropertyCategory.APPEARANCE) public int TabTextColor() { return tabTextColor; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_FLOAT, defaultValue = "20")
-    @SimpleProperty(description = "Ukuran font untuk judul Custom Tab")
+    @SimpleProperty(description = "Ukuran font untuk judul")
     public void TabTitleFontSize(float size) { this.tabTitleFontSize = size; }
     @SimpleProperty(category = PropertyCategory.APPEARANCE) public float TabTitleFontSize() { return tabTitleFontSize; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_FLOAT, defaultValue = "32")
-    @SimpleProperty(description = "Ukuran font untuk ikon back (panah)")
+    @SimpleProperty(description = "Ukuran font untuk ikon panah")
     public void TabIconFontSize(float size) { this.tabIconFontSize = size; }
     @SimpleProperty(category = PropertyCategory.APPEARANCE) public float TabIconFontSize() { return tabIconFontSize; }
 
     // =================================================================
-    // INITIALIZE
+    // INITIALIZE & WEBVIEW SETUP
     // =================================================================
 
     @SimpleFunction(description = "Inisialisasi WebView di dalam Layout.")
@@ -171,8 +147,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         s.setDatabaseEnabled(true);
         s.setJavaScriptCanOpenWindowsAutomatically(true);
         s.setSupportMultipleWindows(true);
-        s.setAllowFileAccessFromFileURLs(true);
-        s.setAllowUniversalAccessFromFileURLs(true);
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         
@@ -210,7 +184,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url == null) return false;
-
                 if (!url.startsWith("http://") && !url.startsWith("https://")) {
                     try {
                         Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
@@ -218,7 +191,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                     } catch (Exception e) { e.printStackTrace(); }
                     return true;
                 } 
-                
                 WebView.HitTestResult result = view.getHitTestResult();
                 if (result != null && result.getType() == 0) {
                     return false; 
@@ -230,7 +202,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         });
 
         mainWebView.setWebChromeClient(new WebChromeClient() {
-            @Override public void onProgressChanged(WebView view, int newProgress) { OnProgressChanged(newProgress); }
+            @Override public void OnProgressChanged(WebView view, int newProgress) { OnProgressChanged(newProgress); }
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
                 if (mFilePathCallback != null) mFilePathCallback.onReceiveValue(null);
@@ -241,22 +213,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                 container.$form().startActivityForResult(Intent.createChooser(intent, "Pilih File"), FILECHOOSER_RESULTCODE);
                 return true;
             }
-            
-            @Override
-            public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                WebView dummyWebView = new WebView(context);
-                dummyWebView.setWebViewClient(new WebViewClient() {
-                    @Override
-                    public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                        BukaDiCustomTab(url);
-                        return true;
-                    }
-                });
-                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                transport.setWebView(dummyWebView);
-                resultMsg.sendToTarget();
-                return true;
-            }
         });
 
         container.$form().registerForActivityResult(this);
@@ -264,7 +220,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     // =================================================================
-    // FUNGSI CUSTOM TAB DIALOG (DINAMIS & FIXED 60PX/DP)
+    // FUNGSI CUSTOM TAB DIALOG (FIXED 60DP HEADER)
     // =================================================================
     private void BukaDiCustomTab(String url) {
         final Dialog customTabDialog = new Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
@@ -273,7 +229,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         mainLayout.setOrientation(LinearLayout.VERTICAL);
         mainLayout.setBackgroundColor(tabBackgroundColor); 
 
-        // Hitung Tinggi Fixed (60dp ke Pixel agar proporsional di semua HP)
+        // Konversi 60dp ke Pixel agar tinggi sama di semua HP
         float scale = context.getResources().getDisplayMetrics().density;
         int fixedHeightPx = (int) (60 * scale + 0.5f);
 
@@ -281,16 +237,15 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         headerLayout.setOrientation(LinearLayout.HORIZONTAL);
         headerLayout.setBackgroundColor(tabBackgroundColor); 
         headerLayout.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        // Padding atas/bawah dikosongkan karena tinggi sudah di-lock
-        headerLayout.setPadding((int)(16 * scale), 0, (int)(16 * scale), 0); 
+        headerLayout.setPadding((int)(20 * scale), 0, (int)(20 * scale), 0); 
 
-        // 1. TOMBOL BACK (DINAMIS)
+        // 1. TOMBOL BACK (MENGGUNAKAN SIMBOL TEKS KUSTOM)
         android.widget.TextView closeButton = new android.widget.TextView(context);
-        closeButton.setText("←"); 
+        closeButton.setText(tabIconText); 
         closeButton.setTextColor(tabTextColor); 
         closeButton.setTextSize(tabIconFontSize); 
         closeButton.setTypeface(null, android.graphics.Typeface.BOLD);
-        closeButton.setPadding(0, 0, (int)(16 * scale), 0); 
+        closeButton.setPadding(0, 0, (int)(20 * scale), 0); 
         closeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -298,7 +253,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             }
         });
 
-        // 2. TEKS JUDUL (DINAMIS)
+        // 2. TEKS JUDUL (JUDUL KUSTOM)
         android.widget.TextView titleView = new android.widget.TextView(context);
         titleView.setText(tabTitle); 
         titleView.setTextColor(tabTextColor); 
@@ -328,9 +283,9 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         
         childWebView.loadUrl(url);
 
-        // Layout Parameters dengan tinggi fixed 60dp
-        LinearLayout.LayoutParams headerLayoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, fixedHeightPx);
-        mainLayout.addView(headerLayout, headerLayoutParams);
+        // Header Fixed Height 60dp
+        LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, fixedHeightPx);
+        mainLayout.addView(headerLayout, headerParams);
         mainLayout.addView(childWebView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         customTabDialog.setContentView(mainLayout);
@@ -351,14 +306,10 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     // =================================================================
-    // FUNGSI BLOK KODULAR
+    // BLOK KODULAR & JEMBATAN JS (ANTI-BENTROK)
     // =================================================================
 
     @SimpleFunction(description = "Muat URL.") public void LoadUrl(String url) { if (mainWebView != null) mainWebView.loadUrl(url); }
-    @SimpleFunction(description = "Muat Ulang Halaman.") public void Reload() { if (mainWebView != null) mainWebView.reload(); }
-    @SimpleFunction(description = "Kembali ke Halaman Sebelumnya.") public void GoBack() { if (mainWebView != null && mainWebView.canGoBack()) mainWebView.goBack(); }
-    @SimpleFunction(description = "Jalankan skrip JavaScript.") public void RunJavaScript(String script) { if (mainWebView != null) mainWebView.evaluateJavascript(script, null); }
-    
     @SimpleFunction(description = "Atur nilai WebViewString.")
     public void SetWebViewString(String value) {
         this.currentWebViewString = value;
@@ -367,12 +318,12 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             mainWebView.evaluateJavascript(jsCode, null);
         }
     }
-    
-    @SimpleFunction(description = "Ambil nilai WebViewString saat ini.") public String GetWebViewString() { return this.currentWebViewString; }
+    @SimpleFunction(description = "Ambil nilai WebViewString.") public String GetWebViewString() { return this.currentWebViewString; }
 
-    // =================================================================
-    // EVENTS & INTERFACE JS
-    // =================================================================
+    @SimpleEvent(description = "Terpicu saat Web mengirim sinyal melalui Android.KirimSinyal.")
+    public void SinyalDiterima(String data) {
+        EventDispatcher.dispatchEvent(this, "SinyalDiterima", data);
+    }
 
     @SimpleEvent(description = "Dipicu saat WebViewString berubah.")
     public void WebViewStringChange(String value) {
@@ -380,37 +331,16 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         EventDispatcher.dispatchEvent(this, "WebViewStringChange", value);
     }
 
-    @SimpleEvent(description = "Terpicu saat Web mengirim sinyal melalui Android.KirimSinyal.")
-    public void SinyalDiterima(String data) {
-        EventDispatcher.dispatchEvent(this, "SinyalDiterima", data);
-    }
-
-    public void TriggerWebViewStringChange(final String value) {
-        uiHandler.post(new Runnable() {
-            @Override
-            public void run() { WebViewStringChange(value); }
-        });
-    }
-
-    public void TriggerSinyalDiterima(final String data) {
-        uiHandler.post(new Runnable() {
-            @Override
-            public void run() { SinyalDiterima(data); }
-        });
-    }
-
     public static class WebAppInterface {
         WebViewCangih parent;
         WebAppInterface(WebViewCangih parent) { this.parent = parent; }
-        
-        @JavascriptInterface public void KirimSinyal(String data) { if (parent != null) parent.TriggerSinyalDiterima(data); }
-        @JavascriptInterface public void WebViewString(String value) { if (parent != null) parent.TriggerWebViewStringChange(value); }
-        @JavascriptInterface public void setWebViewString(String value) { if (parent != null) parent.TriggerWebViewStringChange(value); }
+        @JavascriptInterface public void KirimSinyal(String data) { if (parent != null) parent.uiHandler.post(() -> parent.SinyalDiterima(data)); }
+        @JavascriptInterface public void WebViewString(String value) { if (parent != null) parent.uiHandler.post(() -> parent.WebViewStringChange(value)); }
+        @JavascriptInterface public void setWebViewString(String value) { if (parent != null) parent.uiHandler.post(() -> parent.WebViewStringChange(value)); }
         @JavascriptInterface public String getWebViewString() { return (parent != null) ? parent.GetWebViewString() : ""; }
     }
 
-    @SimpleEvent(description = "Dipicu saat progres pemuatan berubah.") public void OnProgressChanged(int progress) { EventDispatcher.dispatchEvent(this, "OnProgressChanged", progress); }
-    @SimpleEvent(description = "Dipicu saat halaman mulai dimuat.") public void PageStarted(String url) { EventDispatcher.dispatchEvent(this, "PageStarted", url); }
-    @SimpleEvent(description = "Dipicu saat halaman selesai dimuat.") public void PageFinished(String url) { EventDispatcher.dispatchEvent(this, "PageFinished", url); }
-    @SimpleEvent(description = "Pesan konsol dari website.") public void OnConsoleMessage(String message, int lineNumber) { EventDispatcher.dispatchEvent(this, "OnConsoleMessage", message, lineNumber); }
+    @SimpleEvent(description = "Progres berubah.") public void OnProgressChanged(int progress) { EventDispatcher.dispatchEvent(this, "OnProgressChanged", progress); }
+    @SimpleEvent(description = "Pemuatan dimulai.") public void PageStarted(String url) { EventDispatcher.dispatchEvent(this, "PageStarted", url); }
+    @SimpleEvent(description = "Pemuatan selesai.") public void PageFinished(String url) { EventDispatcher.dispatchEvent(this, "PageFinished", url); }
 }
