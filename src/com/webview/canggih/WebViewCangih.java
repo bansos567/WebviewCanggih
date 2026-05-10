@@ -33,6 +33,7 @@ import android.widget.Toast;
 
 import com.google.appinventor.components.annotations.*;
 import com.google.appinventor.components.common.ComponentCategory;
+import com.google.appinventor.components.common.PropertyCategory; // IMPORT BARU YANG DIBUTUHKAN
 import com.google.appinventor.components.common.PropertyTypeConstants;
 import com.google.appinventor.components.runtime.*;
 
@@ -77,47 +78,47 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     // =================================================================
-    // PROPERTI DESIGNER
+    // PROPERTI DESIGNER (SUDAH DIPERBAIKI KATEGORINYA)
     // =================================================================
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Aktifkan JavaScript (Wajib True untuk web modern).")
+    @SimpleProperty
     public void JavascriptEnabled(boolean enabled) {
         this.jsEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setJavaScriptEnabled(enabled);
     }
 
-    @SimpleProperty
+    @SimpleProperty(category = PropertyCategory.BEHAVIOR, description = "Aktifkan JavaScript (Wajib True untuk web modern).")
     public boolean JavascriptEnabled() {
         return jsEnabled;
     }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Aktifkan DomStorage (Wajib untuk Login & Simpan Data).")
+    @SimpleProperty
     public void DomStorageEnabled(boolean enabled) {
         this.domStorageEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setDomStorageEnabled(enabled);
     }
 
-    @SimpleProperty
+    @SimpleProperty(category = PropertyCategory.BEHAVIOR, description = "Aktifkan DomStorage (Wajib untuk Login & Simpan Data).")
     public boolean DomStorageEnabled() {
         return domStorageEnabled;
     }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Izinkan Website akses Lokasi.")
+    @SimpleProperty
     public void PromptForPermission(boolean enabled) {
         this.locationEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setGeolocationEnabled(enabled);
     }
 
-    @SimpleProperty
+    @SimpleProperty(category = PropertyCategory.BEHAVIOR, description = "Izinkan Website akses Lokasi.")
     public boolean PromptForPermission() {
         return locationEnabled;
     }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Izinkan akses file (Untuk Upload Gambar).")
+    @SimpleProperty
     public void AllowFileAccess(boolean enabled) {
         this.fileAccessEnabled = enabled;
         if (mainWebView != null) {
@@ -126,7 +127,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         }
     }
 
-    @SimpleProperty
+    @SimpleProperty(category = PropertyCategory.BEHAVIOR, description = "Izinkan akses file (Untuk Upload Gambar).")
     public boolean AllowFileAccess() {
         return fileAccessEnabled;
     }
