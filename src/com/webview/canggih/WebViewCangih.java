@@ -31,11 +31,13 @@ import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+// SEMUA ANOTASI DAN KATEGORI DIAMBIL DARI SINI
 import com.google.appinventor.components.annotations.*;
 import com.google.appinventor.components.common.ComponentCategory;
-import com.google.appinventor.components.common.PropertyCategory; // FIX ERROR BUILD
 import com.google.appinventor.components.common.PropertyTypeConstants;
 import com.google.appinventor.components.runtime.*;
+
+import java.io.File;
 
 @DesignerComponent(
     version = 8,
