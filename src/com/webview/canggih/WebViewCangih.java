@@ -31,7 +31,6 @@ import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-// SEMUA ANOTASI DAN KATEGORI DIAMBIL DARI SINI
 import com.google.appinventor.components.annotations.*;
 import com.google.appinventor.components.common.ComponentCategory;
 import com.google.appinventor.components.common.PropertyTypeConstants;
@@ -78,7 +77,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     // =================================================================
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Aktifkan JavaScript.", category = PropertyCategory.BEHAVIOR)
+    @SimpleProperty(description = "Aktifkan JavaScript.")
     public void JavascriptEnabled(boolean enabled) {
         this.jsEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setJavaScriptEnabled(enabled);
@@ -87,7 +86,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     public boolean JavascriptEnabled() { return jsEnabled; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Aktifkan DomStorage.", category = PropertyCategory.BEHAVIOR)
+    @SimpleProperty(description = "Aktifkan DomStorage.")
     public void DomStorageEnabled(boolean enabled) {
         this.domStorageEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setDomStorageEnabled(enabled);
@@ -96,7 +95,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     public boolean DomStorageEnabled() { return domStorageEnabled; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Izinkan Website akses Lokasi.", category = PropertyCategory.BEHAVIOR)
+    @SimpleProperty(description = "Izinkan Website akses Lokasi.")
     public void PromptForPermission(boolean enabled) {
         this.locationEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setGeolocationEnabled(enabled);
@@ -105,7 +104,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     public boolean PromptForPermission() { return locationEnabled; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Izinkan akses file.", category = PropertyCategory.BEHAVIOR)
+    @SimpleProperty(description = "Izinkan akses file.")
     public void AllowFileAccess(boolean enabled) {
         this.fileAccessEnabled = enabled;
         if (mainWebView != null) {
@@ -175,19 +174,33 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             @Override public void onPageStarted(WebView view, String url, Bitmap favicon) { PageStarted(url); }
             @Override public void onPageFinished(WebView view, String url) { PageFinished(url); }
             
-            // TANGKAP LINK DAN BUKA DI CUSTOM TAB
+            // =========================================================
+            // TANGKAP LINK DAN BUKA DI CUSTOM TAB SECARA CERDAS
+            // =========================================================
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url == null) return false;
+
+                // 1. JIKA ITU DEEP LINK (Intent ke DANA, Gojek, PlayStore, dll)
                 if (!url.startsWith("http://") && !url.startsWith("https://")) {
                     try {
                         Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
                         if (intent != null) activity.startActivity(intent);
                     } catch (Exception e) { e.printStackTrace(); }
                     return true;
+                } 
+                
+                // 2. CEK SUMBER TRIGGER (DARI SISTEM ATAU SENTUHAN JARI)
+                WebView.HitTestResult result = view.getHitTestResult();
+                if (result != null && result.getType() == 0) {
+                    // Tipe 0 berarti ini bukan hasil sentuhan user, tapi perintah dari sistem/Blok Kodular (LoadUrl)
+                    // Biarkan lewat ke WebView utama (Tamoda Project)
+                    return false; 
                 } else {
+                    // Ini adalah link hasil klik/tap dari User
+                    // Buka di Custom Tab Dialog agar Tamoda Project aman
                     BukaDiCustomTab(url);
-                    return true; // Mencegah pindah halaman utama
+                    return true; 
                 }
             }
         });
@@ -205,10 +218,9 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                 return true;
             }
             
-            // TANGKAP WINDOW.OPEN
+            // TANGKAP WINDOW.OPEN (Misal dari Script JS Tamoda)
             @Override
             public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
                 WebView dummyWebView = new WebView(context);
                 dummyWebView.setWebViewClient(new WebViewClient() {
                     @Override
@@ -217,6 +229,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                         return true;
                     }
                 });
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
                 transport.setWebView(dummyWebView);
                 resultMsg.sendToTarget();
                 return true;
@@ -242,6 +255,10 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         headerLayout.setBackgroundColor(android.graphics.Color.parseColor("#19222e")); 
         headerLayout.setPadding(20, 30, 20, 30);
         headerLayout.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            headerLayout.setElevation(10f);
+        }
 
         android.widget.TextView closeButton = new android.widget.TextView(context);
         closeButton.setText("✕ TUTUP");
