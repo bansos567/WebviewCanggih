@@ -31,6 +31,7 @@ import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+// SEMUA ANOTASI DAN KATEGORI DIAMBIL DARI SINI
 import com.google.appinventor.components.annotations.*;
 import com.google.appinventor.components.common.ComponentCategory;
 import com.google.appinventor.components.common.PropertyTypeConstants;
@@ -73,38 +74,41 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     // =================================================================
-    // PROPERTI DESIGNER
+    // PROPERTI DESIGNER (SUDAH DIPERBAIKI KATEGORINYA!)
     // =================================================================
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Aktifkan JavaScript.")
+    @SimpleProperty
     public void JavascriptEnabled(boolean enabled) {
         this.jsEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setJavaScriptEnabled(enabled);
     }
-    @SimpleProperty
+    
+    @SimpleProperty(category = PropertyCategory.BEHAVIOR, description = "Aktifkan JavaScript.")
     public boolean JavascriptEnabled() { return jsEnabled; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Aktifkan DomStorage.")
+    @SimpleProperty
     public void DomStorageEnabled(boolean enabled) {
         this.domStorageEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setDomStorageEnabled(enabled);
     }
-    @SimpleProperty
+    
+    @SimpleProperty(category = PropertyCategory.BEHAVIOR, description = "Aktifkan DomStorage.")
     public boolean DomStorageEnabled() { return domStorageEnabled; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Izinkan Website akses Lokasi.")
+    @SimpleProperty
     public void PromptForPermission(boolean enabled) {
         this.locationEnabled = enabled;
         if (mainWebView != null) mainWebView.getSettings().setGeolocationEnabled(enabled);
     }
-    @SimpleProperty
+    
+    @SimpleProperty(category = PropertyCategory.BEHAVIOR, description = "Izinkan Website akses Lokasi.")
     public boolean PromptForPermission() { return locationEnabled; }
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
-    @SimpleProperty(description = "Izinkan akses file.")
+    @SimpleProperty
     public void AllowFileAccess(boolean enabled) {
         this.fileAccessEnabled = enabled;
         if (mainWebView != null) {
@@ -112,7 +116,8 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             mainWebView.getSettings().setAllowContentAccess(enabled);
         }
     }
-    @SimpleProperty
+    
+    @SimpleProperty(category = PropertyCategory.BEHAVIOR, description = "Izinkan akses file.")
     public boolean AllowFileAccess() { return fileAccessEnabled; }
 
     // =================================================================
@@ -174,9 +179,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             @Override public void onPageStarted(WebView view, String url, Bitmap favicon) { PageStarted(url); }
             @Override public void onPageFinished(WebView view, String url) { PageFinished(url); }
             
-            // =========================================================
             // TANGKAP LINK DAN BUKA DI CUSTOM TAB SECARA CERDAS
-            // =========================================================
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url == null) return false;
@@ -193,12 +196,10 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                 // 2. CEK SUMBER TRIGGER (DARI SISTEM ATAU SENTUHAN JARI)
                 WebView.HitTestResult result = view.getHitTestResult();
                 if (result != null && result.getType() == 0) {
-                    // Tipe 0 berarti ini bukan hasil sentuhan user, tapi perintah dari sistem/Blok Kodular (LoadUrl)
-                    // Biarkan lewat ke WebView utama (Tamoda Project)
+                    // Tipe 0 berarti bukan hasil sentuhan user, tapi perintah Blok Kodular (LoadUrl)
                     return false; 
                 } else {
-                    // Ini adalah link hasil klik/tap dari User
-                    // Buka di Custom Tab Dialog agar Tamoda Project aman
+                    // Link hasil klik/tap dari User, Buka di Custom Tab Dialog
                     BukaDiCustomTab(url);
                     return true; 
                 }
@@ -218,7 +219,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                 return true;
             }
             
-            // TANGKAP WINDOW.OPEN (Misal dari Script JS Tamoda)
+            // TANGKAP WINDOW.OPEN
             @Override
             public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
                 WebView dummyWebView = new WebView(context);
@@ -255,10 +256,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         headerLayout.setBackgroundColor(android.graphics.Color.parseColor("#19222e")); 
         headerLayout.setPadding(20, 30, 20, 30);
         headerLayout.setGravity(android.view.Gravity.CENTER_VERTICAL);
-        
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-            headerLayout.setElevation(10f);
-        }
 
         android.widget.TextView closeButton = new android.widget.TextView(context);
         closeButton.setText("✕ TUTUP");
@@ -363,7 +360,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         EventDispatcher.dispatchEvent(this, "SinyalDiterima", data);
     }
 
-    // Handler untuk mencegah crash thread App Inventor
     public void TriggerWebViewStringChange(final String value) {
         uiHandler.post(new Runnable() {
             @Override
