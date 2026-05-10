@@ -11,9 +11,6 @@ import android.os.Environment;
 import android.os.Message;
 import android.os.Handler;
 import android.os.Looper;
-import android.print.PrintAttributes;
-import android.print.PrintDocumentAdapter;
-import android.print.PrintManager;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -31,17 +28,14 @@ import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-// SEMUA ANOTASI DAN KATEGORI DIAMBIL DARI SINI
 import com.google.appinventor.components.annotations.*;
 import com.google.appinventor.components.common.ComponentCategory;
 import com.google.appinventor.components.common.PropertyTypeConstants;
 import com.google.appinventor.components.runtime.*;
 
-import java.io.File;
-
 @DesignerComponent(
-    version = 8,
-    description = "WebView Canggih V8: Full Control, Anti-Bentrok Sinyal, dan Custom Tab Tamoda.",
+    version = 9,
+    description = "WebView Canggih V9: Full Control, Anti-Bentrok Sinyal, & Tamoda Premium TabView.",
     category = ComponentCategory.EXTENSION,
     nonVisible = true,
     iconName = ""
@@ -74,7 +68,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     // =================================================================
-    // PROPERTI DESIGNER (SUDAH DIPERBAIKI KATEGORINYA!)
+    // PROPERTI DESIGNER
     // =================================================================
 
     @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_BOOLEAN, defaultValue = "True")
@@ -147,7 +141,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         
-        // Anti Melar (Sesuai Permintaan)
         s.setBuiltInZoomControls(false);
         s.setSupportZoom(false);
         s.setDisplayZoomControls(false);
@@ -164,14 +157,11 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                 try {
                     DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
                     request.setMimeType(mimetype);
-                    request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
                     request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimetype));
                     DownloadManager dm = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
                     dm.enqueue(request);
-                    Toast.makeText(context, "Mulai Download...", Toast.LENGTH_SHORT).show();
-                } catch (Exception e) {
-                    Toast.makeText(context, "Gagal: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
+                    Toast.makeText(context, "Mengunduh file...", Toast.LENGTH_SHORT).show();
+                } catch (Exception e) { e.printStackTrace(); }
             }
         });
 
@@ -179,12 +169,9 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             @Override public void onPageStarted(WebView view, String url, Bitmap favicon) { PageStarted(url); }
             @Override public void onPageFinished(WebView view, String url) { PageFinished(url); }
             
-            // TANGKAP LINK DAN BUKA DI CUSTOM TAB SECARA CERDAS
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url == null) return false;
-
-                // 1. JIKA ITU DEEP LINK (Intent ke DANA, Gojek, PlayStore, dll)
                 if (!url.startsWith("http://") && !url.startsWith("https://")) {
                     try {
                         Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
@@ -193,13 +180,10 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                     return true;
                 } 
                 
-                // 2. CEK SUMBER TRIGGER (DARI SISTEM ATAU SENTUHAN JARI)
                 WebView.HitTestResult result = view.getHitTestResult();
                 if (result != null && result.getType() == 0) {
-                    // Tipe 0 berarti bukan hasil sentuhan user, tapi perintah Blok Kodular (LoadUrl)
                     return false; 
                 } else {
-                    // Link hasil klik/tap dari User, Buka di Custom Tab Dialog
                     BukaDiCustomTab(url);
                     return true; 
                 }
@@ -219,7 +203,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                 return true;
             }
             
-            // TANGKAP WINDOW.OPEN
             @Override
             public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
                 WebView dummyWebView = new WebView(context);
@@ -242,73 +225,71 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     // =================================================================
-    // FUNGSI CUSTOM TAB DIALOG (TEMA DARK TAMODA)
+    // FUNGSI CUSTOM TAB DIALOG (TEMA DARK TAMODA V2)
     // =================================================================
     private void BukaDiCustomTab(String url) {
         final Dialog customTabDialog = new Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
         
         LinearLayout mainLayout = new LinearLayout(context);
         mainLayout.setOrientation(LinearLayout.VERTICAL);
-        mainLayout.setBackgroundColor(android.graphics.Color.parseColor("#19222e")); 
+        mainLayout.setBackgroundColor(android.graphics.Color.parseColor("#111822")); 
 
+        // --- HEADER BAR ---
         LinearLayout headerLayout = new LinearLayout(context);
         headerLayout.setOrientation(LinearLayout.HORIZONTAL);
         headerLayout.setBackgroundColor(android.graphics.Color.parseColor("#19222e")); 
-        headerLayout.setPadding(20, 30, 20, 30);
+        headerLayout.setPadding(30, 40, 30, 40);
         headerLayout.setGravity(android.view.Gravity.CENTER_VERTICAL);
 
-        android.widget.TextView closeButton = new android.widget.TextView(context);
-        closeButton.setText("✕ TUTUP");
-        closeButton.setTextColor(android.graphics.Color.parseColor("#ef5350")); 
-        closeButton.setTextSize(14f);
-        closeButton.setTypeface(null, android.graphics.Typeface.BOLD);
-        closeButton.setPadding(10, 10, 20, 10);
-        closeButton.setOnClickListener(new View.OnClickListener() {
+        // 1. TOMBOL TUTUP (PANAH KEMBALI) DI KIRI
+        android.widget.TextView backBtn = new android.widget.TextView(context);
+        backBtn.setText("←"); // Ikon Panah Kiri
+        backBtn.setTextColor(android.graphics.Color.WHITE);
+        backBtn.setTextSize(22f);
+        backBtn.setPadding(10, 0, 30, 0);
+        backBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 customTabDialog.dismiss(); 
             }
         });
 
+        // 2. BRANDING TEXT DI TENGAH
         android.widget.TextView titleView = new android.widget.TextView(context);
-        try {
-            java.net.URL parsedUrl = new java.net.URL(url);
-            titleView.setText(parsedUrl.getHost()); 
-        } catch (Exception e) {
-            titleView.setText("Tamoda Browser");
-        }
-        titleView.setTextColor(android.graphics.Color.parseColor("#b0bec5")); 
-        titleView.setTextSize(13f);
-        titleView.setSingleLine(true);
-        titleView.setPadding(20, 0, 0, 0);
-
+        titleView.setText("TAMODA TABVIEW");
+        titleView.setTextColor(android.graphics.Color.parseColor("#FFD700")); // Warna Emas
+        titleView.setTextSize(14f);
+        titleView.setTypeface(null, android.graphics.Typeface.BOLD);
+        titleView.setLetterSpacing(0.1f);
+        
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f);
-        headerLayout.addView(closeButton);
+        
+        // 3. SUSUN HEADER
+        headerLayout.addView(backBtn);
         headerLayout.addView(titleView, titleParams);
 
+        // --- WEBVIEW ---
         WebView childWebView = new WebView(context);
         childWebView.getSettings().setJavaScriptEnabled(true);
         childWebView.getSettings().setDomStorageEnabled(true);
-        
-        // Custom tab diizinkan di-zoom untuk baca artikel/iklan
         childWebView.getSettings().setSupportZoom(true);
         childWebView.getSettings().setBuiltInZoomControls(true);
         childWebView.getSettings().setDisplayZoomControls(false); 
-
-        childWebView.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                view.loadUrl(url); 
-                return true;
-            }
-        }); 
         
+        childWebView.setWebViewClient(new WebViewClient()); 
         childWebView.loadUrl(url);
 
-        mainLayout.addView(headerLayout, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        mainLayout.addView(childWebView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        mainLayout.addView(headerLayout);
+        mainLayout.addView(childWebView, new LinearLayout.LayoutParams(-1, -1));
 
         customTabDialog.setContentView(mainLayout);
+        
+        // Animasi Slide Up
+        Window window = customTabDialog.getWindow();
+        if (window != null) {
+            window.setWindowAnimations(android.R.style.Animation_InputMethod);
+        }
+        
         customTabDialog.show();
     }
 
@@ -329,42 +310,29 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     // FUNGSI BLOK KODULAR
     // =================================================================
 
-    @SimpleFunction(description = "Muat URL.") public void LoadUrl(String url) { if (mainWebView != null) mainWebView.loadUrl(url); }
-    @SimpleFunction(description = "Muat Ulang Halaman.") public void Reload() { if (mainWebView != null) mainWebView.reload(); }
-    @SimpleFunction(description = "Kembali ke Halaman Sebelumnya.") public void GoBack() { if (mainWebView != null && mainWebView.canGoBack()) mainWebView.goBack(); }
-    @SimpleFunction(description = "Jalankan skrip JavaScript.") public void RunJavaScript(String script) { if (mainWebView != null) mainWebView.evaluateJavascript(script, null); }
+    @SimpleFunction public void LoadUrl(String url) { if (mainWebView != null) mainWebView.loadUrl(url); }
+    @SimpleFunction public void Reload() { if (mainWebView != null) mainWebView.reload(); }
+    @SimpleFunction public void GoBack() { if (mainWebView != null && mainWebView.canGoBack()) mainWebView.goBack(); }
+    @SimpleFunction public void RunJavaScript(String script) { if (mainWebView != null) mainWebView.evaluateJavascript(script, null); }
     
-    @SimpleFunction(description = "Atur nilai WebViewString.")
+    @SimpleFunction
     public void SetWebViewString(String value) {
         this.currentWebViewString = value;
         if (mainWebView != null) {
-            String jsCode = "window.WebViewString = '" + value.replace("'", "\\'") + "';";
-            mainWebView.evaluateJavascript(jsCode, null);
+            String safeValue = value.replace("'", "\\'");
+            mainWebView.evaluateJavascript("window.WebViewString = '" + safeValue + "';", null);
         }
     }
     
-    @SimpleFunction(description = "Ambil nilai WebViewString saat ini.") public String GetWebViewString() { return this.currentWebViewString; }
+    @SimpleFunction public String GetWebViewString() { return this.currentWebViewString; }
 
-    // =================================================================
-    // EVENTS & INTERFACE JS
-    // =================================================================
-
-    @SimpleEvent(description = "Dipicu saat WebViewString berubah.")
-    public void WebViewStringChange(String value) {
+    @SimpleEvent public void WebViewStringChange(String value) {
         this.currentWebViewString = value;
         EventDispatcher.dispatchEvent(this, "WebViewStringChange", value);
     }
 
-    @SimpleEvent(description = "Terpicu saat Web mengirim sinyal melalui Android.KirimSinyal.")
-    public void SinyalDiterima(String data) {
+    @SimpleEvent public void SinyalDiterima(String data) {
         EventDispatcher.dispatchEvent(this, "SinyalDiterima", data);
-    }
-
-    public void TriggerWebViewStringChange(final String value) {
-        uiHandler.post(new Runnable() {
-            @Override
-            public void run() { WebViewStringChange(value); }
-        });
     }
 
     public void TriggerSinyalDiterima(final String data) {
@@ -378,17 +346,14 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         WebViewCangih parent;
         WebAppInterface(WebViewCangih parent) { this.parent = parent; }
         
-        // JALUR BARU (ANTI-BENTROK)
         @JavascriptInterface public void KirimSinyal(String data) { if (parent != null) parent.TriggerSinyalDiterima(data); }
-        
-        // JALUR LAMA
-        @JavascriptInterface public void WebViewString(String value) { if (parent != null) parent.TriggerWebViewStringChange(value); }
-        @JavascriptInterface public void setWebViewString(String value) { if (parent != null) parent.TriggerWebViewStringChange(value); }
+        @JavascriptInterface public void WebViewString(String value) { if (parent != null) parent.TriggerSinyalDiterima(value); }
+        @JavascriptInterface public void setWebViewString(String value) { if (parent != null) parent.TriggerSinyalDiterima(value); }
         @JavascriptInterface public String getWebViewString() { return (parent != null) ? parent.GetWebViewString() : ""; }
     }
 
-    @SimpleEvent(description = "Dipicu saat progres pemuatan berubah.") public void OnProgressChanged(int progress) { EventDispatcher.dispatchEvent(this, "OnProgressChanged", progress); }
-    @SimpleEvent(description = "Dipicu saat halaman mulai dimuat.") public void PageStarted(String url) { EventDispatcher.dispatchEvent(this, "PageStarted", url); }
-    @SimpleEvent(description = "Dipicu saat halaman selesai dimuat.") public void PageFinished(String url) { EventDispatcher.dispatchEvent(this, "PageFinished", url); }
-    @SimpleEvent(description = "Pesan konsol dari website.") public void OnConsoleMessage(String message, int lineNumber) { EventDispatcher.dispatchEvent(this, "OnConsoleMessage", message, lineNumber); }
+    @SimpleEvent public void OnProgressChanged(int progress) { EventDispatcher.dispatchEvent(this, "OnProgressChanged", progress); }
+    @SimpleEvent public void PageStarted(String url) { EventDispatcher.dispatchEvent(this, "PageStarted", url); }
+    @SimpleEvent public void PageFinished(String url) { EventDispatcher.dispatchEvent(this, "PageFinished", url); }
+    @SimpleEvent public void OnConsoleMessage(String message, int lineNumber) { EventDispatcher.dispatchEvent(this, "OnConsoleMessage", message, lineNumber); }
 }
