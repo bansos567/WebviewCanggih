@@ -31,8 +31,8 @@ import com.google.appinventor.components.common.PropertyTypeConstants;
 import com.google.appinventor.components.runtime.*;
 
 @DesignerComponent(
-    version = 11,
-    description = "WebView Canggih V11 Final: Custom Tab Tamoda, Anti-White Flash, Load HTML, & Navigasi Komplit.",
+    version = 12,
+    description = "WebView Canggih V12 Final: Custom Tab Tamoda, Anti-White Flash, Load HTML, Navigasi Komplit & Run Evaluate JS.",
     category = ComponentCategory.EXTENSION,
     nonVisible = true,
     iconName = ""
@@ -331,7 +331,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     // =================================================================
-    // BLOK KODULAR & NAVIGASI KOMPLIT (V11)
+    // BLOK KODULAR & NAVIGASI KOMPLIT (V12)
     // =================================================================
 
     @SimpleFunction(description = "Muat URL.") 
@@ -343,6 +343,13 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     public void LoadHtml(String htmlContent) {
         if (mainWebView != null) {
             mainWebView.loadDataWithBaseURL("file:///android_asset/", htmlContent, "text/html; charset=utf-8", "UTF-8", null);
+        }
+    }
+
+    @SimpleFunction(description = "Mengeksekusi/menjalankan kode JavaScript langsung ke dalam WebView.")
+    public void EvaluateJavaScript(String jsCode) {
+        if (mainWebView != null) {
+            mainWebView.evaluateJavascript(jsCode, null);
         }
     }
 
