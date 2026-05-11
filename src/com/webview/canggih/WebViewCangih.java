@@ -25,14 +25,23 @@ import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+// --- TAMBAHAN IMPORT UNTUK ASSET BRIDGE ---
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import java.io.InputStream;
+import java.io.IOException;
+import android.os.Build;
+import java.util.HashMap;
+import java.util.Map;
+
 import com.google.appinventor.components.annotations.*;
 import com.google.appinventor.components.common.ComponentCategory;
 import com.google.appinventor.components.common.PropertyTypeConstants;
 import com.google.appinventor.components.runtime.*;
 
 @DesignerComponent(
-    version = 12,
-    description = "WebView Canggih V12 Final: Custom Tab Tamoda, Anti-White Flash, Load HTML, Navigasi Komplit & Run Evaluate JS.",
+    version = 13,
+    description = "WebView Canggih V13 Final: Custom Tab Tamoda, Anti-White Flash, Load HTML, Navigasi Komplit, & Fitur Asset Bridge (Lokal Aset).",
     category = ComponentCategory.EXTENSION,
     nonVisible = true,
     iconName = ""
@@ -68,6 +77,9 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     // Warna background utama (Anti White Flash)
     private int webViewBackColor = 0xFF19222E; 
 
+    // --- TAMBAHAN VARIABEL ASSET BRIDGE ---
+    private String assetDomain = "https://aset.tamoda/";
+
     public WebViewCangih(ComponentContainer container) {
         super(container.$form());
         this.container = container;
@@ -75,6 +87,20 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         this.context = container.$context();
         this.uiHandler = new Handler(Looper.getMainLooper());
     }
+
+    // =================================================================
+    // PROPERTI DESIGNER: ASSET BRIDGE (BARU)
+    // =================================================================
+
+    @DesignerProperty(editorType = PropertyTypeConstants.PROPERTY_TYPE_STRING, defaultValue = "https://aset.tamoda/")
+    @SimpleProperty(description = "Tentukan Custom Domain untuk menyuntikkan aset lokal (Contoh: https://aset.tamoda/)")
+    public void AssetDomain(String domain) {
+        this.assetDomain = domain;
+        if (this.assetDomain != null && !this.assetDomain.endsWith("/")) {
+            this.assetDomain += "/";
+        }
+    }
+    @SimpleProperty(category = PropertyCategory.BEHAVIOR) public String AssetDomain() { return assetDomain; }
 
     // =================================================================
     // PROPERTI DESIGNER: WEBVIEW SETTINGS
@@ -215,6 +241,37 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                     return true; 
                 }
             }
+
+            // --- SISTEM INJEKTOR ASSET BRIDGE DIGABUNGKAN DI SINI ---
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    String url = request.getUrl().toString();
+                    if (assetDomain != null && url.startsWith(assetDomain)) {
+                        WebResourceResponse response = handleAssetIntercept(url);
+                        if (response != null) {
+                            Map<String, String> headers = new HashMap<>();
+                            headers.put("Access-Control-Allow-Origin", "*");
+                            headers.put("Access-Control-Allow-Methods", "GET, OPTIONS");
+                            response.setResponseHeaders(headers);
+                            return response;
+                        }
+                    }
+                }
+                return super.shouldInterceptRequest(view, request);
+            }
+
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+                if (assetDomain != null && url.startsWith(assetDomain)) {
+                    WebResourceResponse response = handleAssetIntercept(url);
+                    if (response != null) {
+                        return response; 
+                    }
+                }
+                return super.shouldInterceptRequest(view, url);
+            }
+            // --------------------------------------------------------
         });
 
         mainWebView.setWebChromeClient(new WebChromeClient() {
@@ -237,6 +294,39 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
 
         container.$form().registerForActivityResult(this);
         layout.addView(mainWebView, new LinearLayout.LayoutParams(-1, -1));
+    }
+
+    // =================================================================
+    // MESIN INJEKTOR ASSET (DARI ASSET BRIDGE)
+    // =================================================================
+    private WebResourceResponse handleAssetIntercept(String url) {
+        try {
+            String fileName = url.replace(this.assetDomain, "");
+            
+            if (fileName.contains("?")) {
+                fileName = fileName.substring(0, fileName.indexOf("?"));
+            }
+            if (fileName.contains("#")) {
+                fileName = fileName.substring(0, fileName.indexOf("#"));
+            }
+
+            String mimeType = "image/png"; 
+            String lowerFileName = fileName.toLowerCase();
+            
+            if (lowerFileName.endsWith(".jpg") || lowerFileName.endsWith(".jpeg")) mimeType = "image/jpeg";
+            else if (lowerFileName.endsWith(".gif")) mimeType = "image/gif";
+            else if (lowerFileName.endsWith(".webp")) mimeType = "image/webp";
+            else if (lowerFileName.endsWith(".svg")) mimeType = "image/svg+xml";
+            else if (lowerFileName.endsWith(".mp3")) mimeType = "audio/mpeg";
+            else if (lowerFileName.endsWith(".css")) mimeType = "text/css";
+            else if (lowerFileName.endsWith(".js")) mimeType = "application/javascript";
+            else if (lowerFileName.endsWith(".json")) mimeType = "application/json";
+
+            InputStream inputStream = context.getAssets().open(fileName);
+            return new WebResourceResponse(mimeType, "UTF-8", inputStream);
+        } catch (IOException e) {
+            return null; // Dibiarkan null agar diteruskan ke respon 404 normal
+        }
     }
 
     // =================================================================
