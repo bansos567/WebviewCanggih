@@ -144,12 +144,9 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         ViewGroup layout = (ViewGroup) view;
         layout.removeAllViews();
 
-        // KUNCI: Set warna background layout penampung biar ga flash putih
         layout.setBackgroundColor(webViewBackColor);
 
         mainWebView = new WebView(context);
-        
-        // KUNCI: Set warna background WebView biar ga flash putih
         mainWebView.setBackgroundColor(webViewBackColor);
 
         WebSettings s = mainWebView.getSettings();
@@ -159,11 +156,8 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         s.setGeolocationEnabled(locationEnabled);
         s.setAllowFileAccess(fileAccessEnabled);
         s.setAllowContentAccess(fileAccessEnabled);
-        
-        // KUNCI: Izinkan baca file lokal untuk LoadHtml jika butuh asset
         s.setAllowFileAccessFromFileURLs(true);
         s.setAllowUniversalAccessFromFileURLs(true);
-        
         s.setDatabaseEnabled(true);
         s.setJavaScriptCanOpenWindowsAutomatically(true);
         s.setSupportMultipleWindows(true);
@@ -205,7 +199,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 if (url == null) return false;
                 
-                // PENGECUALIAN: Biarkan file:// (untuk LoadHtml lokal) diproses oleh WebView
                 if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("file://")) {
                     try {
                         Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
@@ -252,7 +245,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         mainLayout.setOrientation(LinearLayout.VERTICAL);
         mainLayout.setBackgroundColor(tabBackgroundColor); 
 
-        // Konversi 60dp ke Pixel agar tinggi sama di semua HP
         float scale = context.getResources().getDisplayMetrics().density;
         int fixedHeightPx = (int) (60 * scale + 0.5f);
 
@@ -262,7 +254,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         headerLayout.setGravity(android.view.Gravity.CENTER_VERTICAL);
         headerLayout.setPadding((int)(20 * scale), 0, (int)(20 * scale), 0); 
 
-        // 1. TOMBOL BACK (MENGGUNAKAN SIMBOL TEKS KUSTOM)
         android.widget.TextView closeButton = new android.widget.TextView(context);
         closeButton.setText(tabIconText); 
         closeButton.setTextColor(tabTextColor); 
@@ -276,7 +267,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             }
         });
 
-        // 2. TEKS JUDUL (JUDUL KUSTOM)
         android.widget.TextView titleView = new android.widget.TextView(context);
         titleView.setText(tabTitle); 
         titleView.setTextColor(tabTextColor); 
@@ -288,7 +278,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         headerLayout.addView(closeButton);
         headerLayout.addView(titleView, titleParams);
 
-        // 3. SETUP WEBVIEW ANAK
         final WebView childWebView = new WebView(context);
         childWebView.getSettings().setJavaScriptEnabled(true);
         childWebView.getSettings().setDomStorageEnabled(true);
@@ -306,7 +295,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         
         childWebView.loadUrl(url);
 
-        // KUNCI: Mencegah Memory Leak saat Custom Tab ditutup
         customTabDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialog) {
@@ -317,7 +305,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             }
         });
 
-        // Header Fixed Height 60dp
         LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, fixedHeightPx);
         mainLayout.addView(headerLayout, headerParams);
         mainLayout.addView(childWebView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -345,7 +332,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
 
     @SimpleFunction(description = "Muat URL.") public void LoadUrl(String url) { if (mainWebView != null) mainWebView.loadUrl(url); }
     
-    // FITUR BARU: Menampilkan HTML dari teks balon atau variabel global
     @SimpleFunction(description = "Tempel blok teks (balon) atau variabel global berisi kode HTML ke sini")
     public void LoadHtml(String htmlContent) {
         if (mainWebView != null) {
@@ -377,10 +363,47 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     public static class WebAppInterface {
         WebViewCangih parent;
         WebAppInterface(WebViewCangih parent) { this.parent = parent; }
-        @JavascriptInterface public void KirimSinyal(String data) { if (parent != null) parent.uiHandler.post(() -> parent.SinyalDiterima(data)); }
-        @JavascriptInterface public void WebViewString(String value) { if (parent != null) parent.uiHandler.post(() -> parent.WebViewStringChange(value)); }
-        @JavascriptInterface public void setWebViewString(String value) { if (parent != null) parent.uiHandler.post(() -> parent.WebViewStringChange(value)); }
-        @JavascriptInterface public String getWebViewString() { return (parent != null) ? parent.GetWebViewString() : ""; }
+        
+        @JavascriptInterface 
+        public void KirimSinyal(final String data) { 
+            if (parent != null) {
+                parent.uiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        parent.SinyalDiterima(data);
+                    }
+                });
+            } 
+        }
+        
+        @JavascriptInterface 
+        public void WebViewString(final String value) { 
+            if (parent != null) {
+                parent.uiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        parent.WebViewStringChange(value);
+                    }
+                });
+            } 
+        }
+        
+        @JavascriptInterface 
+        public void setWebViewString(final String value) { 
+            if (parent != null) {
+                parent.uiHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        parent.WebViewStringChange(value);
+                    }
+                });
+            } 
+        }
+        
+        @JavascriptInterface 
+        public String getWebViewString() { 
+            return (parent != null) ? parent.GetWebViewString() : ""; 
+        }
     }
 
     @SimpleEvent(description = "Progres berubah.") public void OnProgressChanged(int progress) { EventDispatcher.dispatchEvent(this, "OnProgressChanged", progress); }
