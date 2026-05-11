@@ -31,8 +31,8 @@ import com.google.appinventor.components.common.PropertyTypeConstants;
 import com.google.appinventor.components.runtime.*;
 
 @DesignerComponent(
-    version = 10,
-    description = "WebView Canggih V10 Final: Custom Tab Tamoda Full Dinamis (Fixed 60dp), Anti-White Flash, & Load HTML.",
+    version = 11,
+    description = "WebView Canggih V11 Final: Custom Tab Tamoda, Anti-White Flash, Load HTML, & Navigasi Komplit.",
     category = ComponentCategory.EXTENSION,
     nonVisible = true,
     iconName = ""
@@ -65,7 +65,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     private float tabTitleFontSize = 20f;
     private float tabIconFontSize = 32f;
     
-    // Fitur Baru: Warna background utama (Anti White Flash)
+    // Warna background utama (Anti White Flash)
     private int webViewBackColor = 0xFF19222E; 
 
     public WebViewCangih(ComponentContainer container) {
@@ -331,15 +331,63 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     // =================================================================
-    // BLOK KODULAR & JEMBATAN JS (ANTI-BENTROK)
+    // BLOK KODULAR & NAVIGASI KOMPLIT (V11)
     // =================================================================
 
-    @SimpleFunction(description = "Muat URL.") public void LoadUrl(String url) { if (mainWebView != null) mainWebView.loadUrl(url); }
+    @SimpleFunction(description = "Muat URL.") 
+    public void LoadUrl(String url) { 
+        if (mainWebView != null) mainWebView.loadUrl(url); 
+    }
     
     @SimpleFunction(description = "Tempel blok teks (balon) atau variabel global berisi kode HTML ke sini")
     public void LoadHtml(String htmlContent) {
         if (mainWebView != null) {
             mainWebView.loadDataWithBaseURL("file:///android_asset/", htmlContent, "text/html; charset=utf-8", "UTF-8", null);
+        }
+    }
+
+    @SimpleFunction(description = "Kembali ke halaman sebelumnya.")
+    public void GoBack() {
+        if (mainWebView != null && mainWebView.canGoBack()) {
+            mainWebView.goBack();
+        }
+    }
+
+    @SimpleFunction(description = "Cek apakah ada halaman sebelumnya.")
+    public boolean CanGoBack() {
+        return mainWebView != null && mainWebView.canGoBack();
+    }
+
+    @SimpleFunction(description = "Maju ke halaman berikutnya.")
+    public void GoForward() {
+        if (mainWebView != null && mainWebView.canGoForward()) {
+            mainWebView.goForward();
+        }
+    }
+
+    @SimpleFunction(description = "Cek apakah bisa maju ke halaman berikutnya.")
+    public boolean CanGoForward() {
+        return mainWebView != null && mainWebView.canGoForward();
+    }
+
+    @SimpleFunction(description = "Muat ulang (Refresh) halaman web saat ini.")
+    public void Reload() {
+        if (mainWebView != null) {
+            mainWebView.reload();
+        }
+    }
+
+    @SimpleFunction(description = "Hentikan pemuatan halaman web.")
+    public void StopLoading() {
+        if (mainWebView != null) {
+            mainWebView.stopLoading();
+        }
+    }
+
+    @SimpleFunction(description = "Bersihkan semua cache WebView.")
+    public void ClearCaches() {
+        if (mainWebView != null) {
+            mainWebView.clearCache(true);
         }
     }
 
@@ -351,7 +399,14 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             mainWebView.evaluateJavascript(jsCode, null);
         }
     }
-    @SimpleFunction(description = "Ambil nilai WebViewString.") public String GetWebViewString() { return this.currentWebViewString; }
+    @SimpleFunction(description = "Ambil nilai WebViewString.") 
+    public String GetWebViewString() { 
+        return this.currentWebViewString; 
+    }
+
+    // =================================================================
+    // JEMBATAN JS (ANTI-BENTROK) & EVENT LISTENER
+    // =================================================================
 
     @SimpleEvent(description = "Terpicu saat Web mengirim sinyal melalui Android.KirimSinyal.")
     public void SinyalDiterima(String data) {
