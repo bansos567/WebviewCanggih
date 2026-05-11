@@ -218,7 +218,11 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         });
 
         mainWebView.setWebChromeClient(new WebChromeClient() {
-            @Override public void OnProgressChanged(WebView view, int newProgress) { OnProgressChanged(newProgress); }
+            @Override 
+            public void onProgressChanged(WebView view, int newProgress) { 
+                WebViewCangih.this.OnProgressChanged(newProgress); 
+            }
+            
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
                 if (mFilePathCallback != null) mFilePathCallback.onReceiveValue(null);
