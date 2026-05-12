@@ -35,8 +35,8 @@ import com.google.appinventor.components.common.PropertyTypeConstants;
 import com.google.appinventor.components.runtime.*;
 
 @DesignerComponent(
-    version = 14,
-    description = "WebView Canggih V14 Final: Asset Domain Interceptor, Custom Tab (Anti-Lag Fix), Anti-White Flash, Navigasi Komplit.",
+    version = 15,
+    description = "WebView Canggih V15 Final: Asset Domain, Async Destroy (Fix Lag 100%), Custom Tab, Navigasi Komplit.",
     category = ComponentCategory.EXTENSION,
     nonVisible = true,
     iconName = ""
@@ -168,7 +168,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         s.setAllowUniversalAccessFromFileURLs(true);
         s.setDatabaseEnabled(true);
         s.setJavaScriptCanOpenWindowsAutomatically(true);
-        s.setSupportMultipleWindows(false); // Fix Custom Tab anchor link
+        s.setSupportMultipleWindows(false); 
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         s.setBuiltInZoomControls(false);
@@ -202,13 +202,11 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             @Override public void onPageStarted(WebView view, String url, Bitmap favicon) { PageStarted(url); }
             @Override public void onPageFinished(WebView view, String url) { PageFinished(url); }
             
-            // FUNGSI PENCEGAT ASSET DOMAIN (MENGUBAH URL TAMODA MENJADI FILE ASSET)
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
                 if (url != null && url.startsWith(assetDomain)) {
                     try {
                         String fileName = url.substring(assetDomain.length());
-                        // Hapus parameter jika ada (misal .png?v=1)
                         if (fileName.contains("?")) fileName = fileName.substring(0, fileName.indexOf("?"));
                         if (fileName.contains("#")) fileName = fileName.substring(0, fileName.indexOf("#"));
                         
@@ -275,7 +273,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     // =================================================================
-    // FUNGSI CUSTOM TAB DIALOG (FIXED 60DP HEADER & ANTI-LAG DISMISS)
+    // FUNGSI CUSTOM TAB DIALOG (FIXED 60DP HEADER & ASYNC DISMISS)
     // =================================================================
     private void BukaDiCustomTab(String url) {
         final Dialog customTabDialog = new Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
@@ -325,7 +323,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         childWebView.getSettings().setDisplayZoomControls(false); 
 
         childWebView.setWebViewClient(new WebViewClient() {
-            // TERAPKAN JUGA ASSET INTERCEPTOR DI CUSTOM TAB JIKA DIPERLUKAN
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
                 if (url != null && url.startsWith(assetDomain)) {
@@ -357,20 +354,43 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         
         childWebView.loadUrl(url);
 
-        // V14 Anti-Lag Dismiss System
+        // ====================================================================
+        // UPDATE V15: ASYNC DESTROY (KUNCI ANTI-LAG SAAT TUTUP CUSTOM TAB)
+        // ====================================================================
         customTabDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialog) {
                 if (childWebView != null) {
-                    ViewGroup parent = (ViewGroup) childWebView.getParent();
-                    if (parent != null) {
-                        parent.removeView(childWebView);
+                    try {
+                        // 1. Lepas dari layout (Biar gak kelihatan blank di layar)
+                        ViewGroup parent = (ViewGroup) childWebView.getParent();
+                        if (parent != null) {
+                            parent.removeView(childWebView);
+                        }
+                        
+                        // 2. Bekukan mesin WebView (hentikan JS & Render)
+                        childWebView.stopLoading();
+                        childWebView.onPause(); 
+                        childWebView.loadUrl("about:blank"); 
+                        childWebView.clearHistory();
+
+                        // 3. TUNDA PENGHANCURAN (KUNCI ANTI-LEMOT!)
+                        // Biarkan dialog animasi tutup (sekitar 300ms), baru hancurkan WebView di background
+                        uiHandler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    childWebView.removeAllViews();
+                                    childWebView.destroy();
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }, 500); // Jeda 500 milidetik
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                    childWebView.stopLoading();
-                    childWebView.loadUrl("about:blank"); 
-                    childWebView.clearHistory();
-                    childWebView.removeAllViews();
-                    childWebView.destroy();
                 }
             }
         });
@@ -408,7 +428,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     @SimpleFunction(description = "Tempel blok teks HTML ke sini")
     public void LoadHtml(String htmlContent) {
         if (mainWebView != null) {
-            // V14 Menggunakan AssetDomain sebagai BaseURL agar sinkron dengan interceptor
             mainWebView.loadDataWithBaseURL(assetDomain, htmlContent, "text/html; charset=utf-8", "UTF-8", null);
         }
     }
