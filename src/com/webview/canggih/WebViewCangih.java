@@ -578,7 +578,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     @SimpleEvent(description = "Progres berubah.") public void OnProgressChanged(int progress) { EventDispatcher.dispatchEvent(this, "OnProgressChanged", progress); }
-    @SimpleEvent(description = "Progres berubah.") public void OnProgressChanged(int progress) { EventDispatcher.dispatchEvent(this, "OnProgressChanged", progress); }
     @SimpleEvent(description = "Pemuatan dimulai.") public void PageStarted(String url) { EventDispatcher.dispatchEvent(this, "PageStarted", url); }
     @SimpleEvent(description = "Pemuatan selesai.") public void PageFinished(String url) { EventDispatcher.dispatchEvent(this, "PageFinished", url); }
 
