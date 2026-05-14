@@ -43,7 +43,7 @@ import com.google.appinventor.components.runtime.*;
 )
 @SimpleObject(external = true)
 @UsesPermissions(permissionNames = "android.permission.INTERNET, android.permission.READ_EXTERNAL_STORAGE, android.permission.WRITE_EXTERNAL_STORAGE, android.permission.ACCESS_FINE_LOCATION")
-public class WebViewCangih extends AndroidNonvisibleComponent implements ActivityResultListener {
+public class WebViewCangih extends AndroidNonvisibleComponent implements ActivityResultListener, OnDestroyListener, OnPauseListener, OnResumeListener {
 
     private Context context;
     private Activity activity;
@@ -81,6 +81,12 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         this.activity = (Activity) container.$context();
         this.context = container.$context();
         this.uiHandler = new Handler(Looper.getMainLooper());
+        
+        // --- TAMBAHAN: Daftarkan pemantau penutupan aplikasi ---
+        container.$form().registerForOnDestroy(this);
+        container.$form().registerForOnPause(this);
+        container.$form().registerForOnResume(this);
+        // --------------------------------------------------------
     }
 
     // =================================================================
@@ -174,6 +180,11 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         s.setBuiltInZoomControls(false);
         s.setSupportZoom(false);
         s.setDisplayZoomControls(false);
+
+        // --- TAMBAHAN FIX LAG / nativePollOnce ---
+        s.setCacheMode(WebSettings.LOAD_DEFAULT);
+        mainWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        // -----------------------------------------
 
         CookieManager.getInstance().setAcceptThirdPartyCookies(mainWebView, true);
 
@@ -316,6 +327,12 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         headerLayout.addView(titleView, titleParams);
 
         final WebView childWebView = new WebView(context);
+        
+        // --- TAMBAHAN FIX LAG / nativePollOnce DI CUSTOM TAB ---
+        childWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null); 
+        childWebView.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
+        // -------------------------------------------------------
+
         childWebView.getSettings().setJavaScriptEnabled(true);
         childWebView.getSettings().setDomStorageEnabled(true);
         childWebView.getSettings().setSupportZoom(true);
@@ -355,27 +372,29 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         childWebView.loadUrl(url);
 
         // ====================================================================
-        // UPDATE V15: ASYNC DESTROY (KUNCI ANTI-LAG SAAT TUTUP CUSTOM TAB)
+        // UPDATE V15.1: ASYNC DESTROY (FIX LAG 7 DETIK SAAT TUTUP CEPAT)
         // ====================================================================
         customTabDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialog) {
                 if (childWebView != null) {
                     try {
-                        // 1. Lepas dari layout (Biar gak kelihatan blank di layar)
+                        // 1. Lepas dari layout utama
                         ViewGroup parent = (ViewGroup) childWebView.getParent();
                         if (parent != null) {
                             parent.removeView(childWebView);
                         }
                         
-                        // 2. Bekukan mesin WebView (hentikan JS & Render)
+                        // 2. Matikan Hardware Acceleration agar memori GPU langsung terlepas (Mencegah Lag)
+                        childWebView.setLayerType(View.LAYER_TYPE_NONE, null);
+                        
+                        // 3. Hentikan semua proses secara paksa (HAPUS about:blank agar tidak bentrok dengan destroy)
                         childWebView.stopLoading();
                         childWebView.onPause(); 
-                        childWebView.loadUrl("about:blank"); 
                         childWebView.clearHistory();
 
-                        // 3. TUNDA PENGHANCURAN (KUNCI ANTI-LEMOT!)
-                        // Biarkan dialog animasi tutup (sekitar 300ms), baru hancurkan WebView di background
+                        // 4. Jeda 1.5 detik (1500ms). Biarkan UI Thread bernapas dan animasi tutup selesai, 
+                        // baru hancurkan mesin Chromium secara aman di belakang layar.
                         uiHandler.postDelayed(new Runnable() {
                             @Override
                             public void run() {
@@ -386,7 +405,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                                     e.printStackTrace();
                                 }
                             }
-                        }, 500); // Jeda 500 milidetik
+                        }, 1500); 
 
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -562,3 +581,47 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     @SimpleEvent(description = "Pemuatan dimulai.") public void PageStarted(String url) { EventDispatcher.dispatchEvent(this, "PageStarted", url); }
     @SimpleEvent(description = "Pemuatan selesai.") public void PageFinished(String url) { EventDispatcher.dispatchEvent(this, "PageFinished", url); }
 }
+
+    // =================================================================
+    // LIFECYCLE MANAGER (ANTI-ANR BACKGROUND & MEMORY LEAK FIX)
+    // =================================================================
+
+    @Override
+    public void onPause() {
+        if (mainWebView != null) {
+            mainWebView.onPause(); // Tidurkan mesin render saat app diminimize
+            mainWebView.pauseTimers(); // Hentikan timer JS agar tidak makan CPU
+        }
+    }
+
+    @Override
+    public void onResume() {
+        if (mainWebView != null) {
+            mainWebView.onResume(); // Bangunkan mesin render saat app dibuka lagi
+            mainWebView.resumeTimers();
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        if (mainWebView != null) {
+            try {
+                // Lepaskan WebView utama dari layar dengan aman saat aplikasi ditutup
+                ViewGroup parent = (ViewGroup) mainWebView.getParent();
+                if (parent != null) {
+                    parent.removeView(mainWebView);
+                }
+                mainWebView.setLayerType(View.LAYER_TYPE_NONE, null);
+                mainWebView.stopLoading();
+                mainWebView.onPause();
+                mainWebView.clearHistory();
+                mainWebView.removeAllViews();
+                mainWebView.destroy();
+                mainWebView = null;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    
