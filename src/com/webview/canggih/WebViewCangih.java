@@ -372,40 +372,42 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         childWebView.loadUrl(url);
 
         // ====================================================================
-        // UPDATE V15.1: ASYNC DESTROY (FIX LAG 7 DETIK SAAT TUTUP CEPAT)
+        // UPDATE V15.3: ULTIMATE ANTI-FREEZE (DELAYED CLEANUP)
         // ====================================================================
         customTabDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialog) {
                 if (childWebView != null) {
                     try {
-                        // 1. Lepas dari layout utama
+                        // 1. SEMBUNYIKAN DAN CABUT SEKARANG JUGA!
+                        // Bikin WebView-nya hilang dari pandangan seketika agar layar utama bisa disentuh.
+                        childWebView.setVisibility(View.GONE);
                         ViewGroup parent = (ViewGroup) childWebView.getParent();
                         if (parent != null) {
                             parent.removeView(childWebView);
                         }
                         
-                        // 2. Matikan Hardware Acceleration agar memori GPU langsung terlepas (Mencegah Lag)
-                        childWebView.setLayerType(View.LAYER_TYPE_NONE, null);
+                        // 2. JANGAN LAKUKAN APAPUN DI SINI. 
+                        // Jangan stopLoading, jangan clearHistory. Biarkan mesinnya jalan 
+                        // sepersekian detik agar tidak terjadi "kemacetan/deadlock" di CPU.
                         
-                        // 3. Hentikan semua proses secara paksa (HAPUS about:blank agar tidak bentrok dengan destroy)
-                        childWebView.stopLoading();
-                        childWebView.onPause(); 
-                        childWebView.clearHistory();
-
-                        // 4. Jeda 1.5 detik (1500ms). Biarkan UI Thread bernapas dan animasi tutup selesai, 
-                        // baru hancurkan mesin Chromium secara aman di belakang layar.
+                        // 3. EKSEKUSI PEMBUNUHAN DIAM-DIAM 3 DETIK KEMUDIAN.
+                        // Setelah 3000ms (3 detik), mesin dipastikan sudah tenang, baru kita bersihkan.
                         uiHandler.postDelayed(new Runnable() {
                             @Override
                             public void run() {
                                 try {
+                                    childWebView.setWebChromeClient(null);
+                                    childWebView.setWebViewClient(null);
+                                    childWebView.stopLoading();
+                                    childWebView.clearHistory();
                                     childWebView.removeAllViews();
                                     childWebView.destroy();
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
                             }
-                        }, 1500); 
+                        }, 3000); // Waktu tunda 3 detik
 
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -413,6 +415,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                 }
             }
         });
+
 
         LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, fixedHeightPx);
         mainLayout.addView(headerLayout, headerParams);
