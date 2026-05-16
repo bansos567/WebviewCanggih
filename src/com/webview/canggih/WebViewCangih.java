@@ -35,8 +35,8 @@ import com.google.appinventor.components.common.PropertyTypeConstants;
 import com.google.appinventor.components.runtime.*;
 
 @DesignerComponent(
-    version = 15,
-    description = "WebView Canggih V15 Final: Asset Domain, Async Destroy (Fix Lag 100%), Custom Tab, Navigasi Komplit.",
+    version = 16,
+    description = "WebView Canggih V16 Final: Fix Delay JS, PageLoaded Event, Async Destroy, & Anti-Freeze Timer.",
     category = ComponentCategory.EXTENSION,
     nonVisible = true,
     iconName = ""
@@ -82,11 +82,9 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         this.context = container.$context();
         this.uiHandler = new Handler(Looper.getMainLooper());
         
-        // --- TAMBAHAN: Daftarkan pemantau penutupan aplikasi ---
         container.$form().registerForOnDestroy(this);
         container.$form().registerForOnPause(this);
         container.$form().registerForOnResume(this);
-        // --------------------------------------------------------
     }
 
     // =================================================================
@@ -181,10 +179,8 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         s.setSupportZoom(false);
         s.setDisplayZoomControls(false);
 
-        // --- TAMBAHAN FIX LAG / nativePollOnce ---
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         mainWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        // -----------------------------------------
 
         CookieManager.getInstance().setAcceptThirdPartyCookies(mainWebView, true);
 
@@ -264,10 +260,9 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         mainWebView.setWebChromeClient(new WebChromeClient() {
             @Override 
             public void onProgressChanged(WebView view, int newProgress) { 
-                // Progress bawaan jalan seperti biasa
                 WebViewCangih.this.OnProgressChanged(newProgress); 
                 
-                // LOGIKA BARU: Tembak Event 'PageLoaded' tiap kali 100%
+                // LOGIKA BARU: Tembak Event 'PageLoaded' tiap kali menyentuh 100% (berlaku untuk refresh)
                 if (newProgress == 100) {
                     String currentUrl = view.getUrl();
                     if (currentUrl == null) currentUrl = "";
@@ -336,10 +331,8 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
 
         final WebView childWebView = new WebView(context);
         
-        // --- TAMBAHAN FIX LAG / nativePollOnce DI CUSTOM TAB ---
         childWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null); 
         childWebView.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
-        // -------------------------------------------------------
 
         childWebView.getSettings().setJavaScriptEnabled(true);
         childWebView.getSettings().setDomStorageEnabled(true);
@@ -379,28 +372,17 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         
         childWebView.loadUrl(url);
 
-        // ====================================================================
-        // UPDATE V15.3: ULTIMATE ANTI-FREEZE (DELAYED CLEANUP)
-        // ====================================================================
         customTabDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialog) {
                 if (childWebView != null) {
                     try {
-                        // 1. SEMBUNYIKAN DAN CABUT SEKARANG JUGA!
-                        // Bikin WebView-nya hilang dari pandangan seketika agar layar utama bisa disentuh.
                         childWebView.setVisibility(View.GONE);
                         ViewGroup parent = (ViewGroup) childWebView.getParent();
                         if (parent != null) {
                             parent.removeView(childWebView);
                         }
                         
-                        // 2. JANGAN LAKUKAN APAPUN DI SINI. 
-                        // Jangan stopLoading, jangan clearHistory. Biarkan mesinnya jalan 
-                        // sepersekian detik agar tidak terjadi "kemacetan/deadlock" di CPU.
-                        
-                        // 3. EKSEKUSI PEMBUNUHAN DIAM-DIAM 3 DETIK KEMUDIAN.
-                        // Setelah 3000ms (3 detik), mesin dipastikan sudah tenang, baru kita bersihkan.
                         uiHandler.postDelayed(new Runnable() {
                             @Override
                             public void run() {
@@ -415,7 +397,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                                     e.printStackTrace();
                                 }
                             }
-                        }, 3000); // Waktu tunda 3 detik
+                        }, 3000); 
 
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -423,7 +405,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                 }
             }
         });
-
 
         LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, fixedHeightPx);
         mainLayout.addView(headerLayout, headerParams);
@@ -532,6 +513,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             });
         }
     }
+    
     @SimpleFunction(description = "Ambil nilai WebViewString.") 
     public String GetWebViewString() { 
         return this.currentWebViewString; 
@@ -552,6 +534,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         EventDispatcher.dispatchEvent(this, "WebViewStringChange", value);
     }
 
+    // KELAS STATIS INI SEKARANG AMAN (DITUTUP DENGAN BENAR)
     public static class WebAppInterface {
         WebViewCangih parent;
         WebAppInterface(WebViewCangih parent) { this.parent = parent; }
@@ -580,18 +563,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             } 
         }
         
-            @SimpleEvent(description = "Terpicu setiap kali halaman selesai dimuat 100%, termasuk saat refresh.") 
-    public void PageLoaded(final String url) { 
-        uiHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                EventDispatcher.dispatchEvent(WebViewCangih.this, "PageLoaded", url);
-            }
-        });
-    }
-
-
-        
         @JavascriptInterface 
         public void setWebViewString(final String value) { 
             if (parent != null) {
@@ -608,17 +579,24 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         public String getWebViewString() { 
             return (parent != null) ? parent.GetWebViewString() : ""; 
         }
-    }
+    } // <--- BATAS AKHIR KELAS STATIS
 
     @SimpleEvent(description = "Progres berubah.") public void OnProgressChanged(int progress) { EventDispatcher.dispatchEvent(this, "OnProgressChanged", progress); }
+    
     @SimpleEvent(description = "Pemuatan dimulai.") public void PageStarted(String url) { EventDispatcher.dispatchEvent(this, "PageStarted", url); }
-    @SimpleEvent(description = "Pemuatan selesai.") public void PageFinished(String url) { EventDispatcher.dispatchEvent(this, "PageFinished", url); }
     
-    
-    
-    
-    
-    
+    @SimpleEvent(description = "Pemuatan selesai (Hanya 1 kali saat buka).") public void PageFinished(String url) { EventDispatcher.dispatchEvent(this, "PageFinished", url); }
+
+    // BLOK BARU: PageLoaded
+    @SimpleEvent(description = "Terpicu setiap kali halaman selesai dimuat 100%, termasuk saat refresh.") 
+    public void PageLoaded(final String url) { 
+        uiHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                EventDispatcher.dispatchEvent(WebViewCangih.this, "PageLoaded", url);
+            }
+        });
+    }
 
     // =================================================================
     // LIFECYCLE MANAGER (ANTI-ANR BACKGROUND & MEMORY LEAK FIX)
@@ -627,7 +605,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     @Override
     public void onPause() {
         if (mainWebView != null) {
-            mainWebView.onPause(); // Cukup ini saja. pauseTimers() dihapus karena membunuh setInterval!
+            mainWebView.onPause(); 
         }
     }
 
@@ -642,7 +620,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     public void onDestroy() {
         if (mainWebView != null) {
             try {
-                // Lepaskan WebView utama dari layar dengan aman saat aplikasi ditutup
                 ViewGroup parent = (ViewGroup) mainWebView.getParent();
                 if (parent != null) {
                     parent.removeView(mainWebView);
@@ -659,5 +636,4 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             }
         }
     }
-} // <--- PERHATIKAN: Kurung kurawal penutup class HARUS berada di paling bawah sini!
-
+}
