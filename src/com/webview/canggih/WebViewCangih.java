@@ -264,7 +264,15 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         mainWebView.setWebChromeClient(new WebChromeClient() {
             @Override 
             public void onProgressChanged(WebView view, int newProgress) { 
+                // Progress bawaan jalan seperti biasa
                 WebViewCangih.this.OnProgressChanged(newProgress); 
+                
+                // LOGIKA BARU: Tembak Event 'PageLoaded' tiap kali 100%
+                if (newProgress == 100) {
+                    String currentUrl = view.getUrl();
+                    if (currentUrl == null) currentUrl = "";
+                    WebViewCangih.this.PageLoaded(currentUrl);
+                }
             }
             
             @Override
@@ -455,9 +463,14 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     @SimpleFunction(description = "Mengeksekusi kode JavaScript langsung ke dalam WebView.")
-    public void EvaluateJavaScript(String jsCode) {
+    public void EvaluateJavaScript(final String jsCode) {
         if (mainWebView != null) {
-            mainWebView.evaluateJavascript(jsCode, null);
+            uiHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    mainWebView.evaluateJavascript(jsCode, null);
+                }
+            });
         }
     }
 
@@ -507,11 +520,16 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     }
 
     @SimpleFunction(description = "Atur nilai WebViewString.")
-    public void SetWebViewString(String value) {
+    public void SetWebViewString(final String value) {
         this.currentWebViewString = value;
         if (mainWebView != null) {
-            String jsCode = "window.WebViewString = '" + value.replace("'", "\\'") + "';";
-            mainWebView.evaluateJavascript(jsCode, null);
+            uiHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    String jsCode = "window.WebViewString = '" + value.replace("'", "\\'") + "';";
+                    mainWebView.evaluateJavascript(jsCode, null);
+                }
+            });
         }
     }
     @SimpleFunction(description = "Ambil nilai WebViewString.") 
@@ -562,6 +580,18 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
             } 
         }
         
+            @SimpleEvent(description = "Terpicu setiap kali halaman selesai dimuat 100%, termasuk saat refresh.") 
+    public void PageLoaded(final String url) { 
+        uiHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                EventDispatcher.dispatchEvent(WebViewCangih.this, "PageLoaded", url);
+            }
+        });
+    }
+
+
+        
         @JavascriptInterface 
         public void setWebViewString(final String value) { 
             if (parent != null) {
@@ -583,6 +613,12 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     @SimpleEvent(description = "Progres berubah.") public void OnProgressChanged(int progress) { EventDispatcher.dispatchEvent(this, "OnProgressChanged", progress); }
     @SimpleEvent(description = "Pemuatan dimulai.") public void PageStarted(String url) { EventDispatcher.dispatchEvent(this, "PageStarted", url); }
     @SimpleEvent(description = "Pemuatan selesai.") public void PageFinished(String url) { EventDispatcher.dispatchEvent(this, "PageFinished", url); }
+    
+    
+    
+    
+    
+    
 
     // =================================================================
     // LIFECYCLE MANAGER (ANTI-ANR BACKGROUND & MEMORY LEAK FIX)
@@ -591,16 +627,14 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
     @Override
     public void onPause() {
         if (mainWebView != null) {
-            mainWebView.onPause(); // Tidurkan mesin render saat app diminimize
-            mainWebView.pauseTimers(); // Hentikan timer JS agar tidak makan CPU
+            mainWebView.onPause(); // Cukup ini saja. pauseTimers() dihapus karena membunuh setInterval!
         }
     }
 
     @Override
     public void onResume() {
         if (mainWebView != null) {
-            mainWebView.onResume(); // Bangunkan mesin render saat app dibuka lagi
-            mainWebView.resumeTimers();
+            mainWebView.onResume(); 
         }
     }
 
