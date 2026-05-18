@@ -225,6 +225,12 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                         else if (fileName.endsWith(".css")) mimeType = "text/css";
                         else if (fileName.endsWith(".js")) mimeType = "application/javascript";
                         else if (fileName.endsWith(".svg")) mimeType = "image/svg+xml";
+                        // --- TAMBAHAN DUKUNGAN AUDIO, ANIMASI JSON & FONT OFFLINE ---
+                        else if (fileName.endsWith(".mp3")) mimeType = "audio/mpeg";
+                        else if (fileName.endsWith(".ogg")) mimeType = "audio/ogg";
+                        else if (fileName.endsWith(".json")) mimeType = "application/json";
+                        else if (fileName.endsWith(".ttf")) mimeType = "font/ttf";
+                        else if (fileName.endsWith(".woff") || fileName.endsWith(".woff2")) mimeType = "font/woff";
                         
                         return new WebResourceResponse(mimeType, "UTF-8", is);
                     } catch (Exception e) {
@@ -354,6 +360,15 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                         if (fileName.endsWith(".png")) mimeType = "image/png";
                         else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) mimeType = "image/jpeg";
                         else if (fileName.endsWith(".gif")) mimeType = "image/gif";
+                        else if (fileName.endsWith(".css")) mimeType = "text/css";
+                        else if (fileName.endsWith(".js")) mimeType = "application/javascript";
+                        else if (fileName.endsWith(".svg")) mimeType = "image/svg+xml";
+                        // --- TAMBAHAN DUKUNGAN AUDIO, ANIMASI JSON & FONT OFFLINE ---
+                        else if (fileName.endsWith(".mp3")) mimeType = "audio/mpeg";
+                        else if (fileName.endsWith(".ogg")) mimeType = "audio/ogg";
+                        else if (fileName.endsWith(".json")) mimeType = "application/json";
+                        else if (fileName.endsWith(".ttf")) mimeType = "font/ttf";
+                        else if (fileName.endsWith(".woff") || fileName.endsWith(".woff2")) mimeType = "font/woff";
                         
                         return new WebResourceResponse(mimeType, "UTF-8", is);
                     } catch (Exception e) {
