@@ -179,7 +179,6 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
         s.setSupportZoom(false);
         s.setDisplayZoomControls(false);
         
-        s.setTextZoom(100);
 
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         mainWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
