@@ -221,6 +221,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                         InputStream is = context.getAssets().open(fileName);
                         String mimeType = "application/octet-stream";
                         if (fileName.endsWith(".png")) mimeType = "image/png";
+                        else if (fileName.endsWith(".webp")) mimeType = "image/webp"; // Tambahan WebP
                         else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) mimeType = "image/jpeg";
                         else if (fileName.endsWith(".gif")) mimeType = "image/gif";
                         else if (fileName.endsWith(".css")) mimeType = "text/css";
@@ -359,6 +360,7 @@ public class WebViewCangih extends AndroidNonvisibleComponent implements Activit
                         InputStream is = context.getAssets().open(fileName);
                         String mimeType = "application/octet-stream";
                         if (fileName.endsWith(".png")) mimeType = "image/png";
+                        else if (fileName.endsWith(".webp")) mimeType = "image/webp"; // Tambahan WebP
                         else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) mimeType = "image/jpeg";
                         else if (fileName.endsWith(".gif")) mimeType = "image/gif";
                         else if (fileName.endsWith(".css")) mimeType = "text/css";
